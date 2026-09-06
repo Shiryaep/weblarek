@@ -9,6 +9,7 @@ export interface IApi {
   ): Promise<T>;
 }
 
+// Интерфейсы для классов данных
 export type TPayment = "online" | "offline";
 
 export interface IProduct {
@@ -34,4 +35,25 @@ export interface IOrder {
   address: string;
   total: number;
   items: string[];
+}
+
+// Ответ сервера на GET /product/
+export interface IProductListResponse {
+  items: IProduct[];
+}
+
+// Заказ, отправляемый на сервер POST /order/
+export interface IOrder {
+  payment: TPayment;
+  email: string;
+  phone: string;
+  address: string;
+  total: number;
+  items: string[];
+}
+
+// Ответ сервера на POST /order/
+export interface IOrderResult {
+  id: string;
+  error?: string;
 }

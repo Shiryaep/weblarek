@@ -3,7 +3,9 @@ import { EventEmitter } from "./components/base/Events";
 import { ProductModel } from "./components/models/ProductModel";
 import { BasketModel } from "./components/models/BasketModel";
 import { OrderModel } from "./components/models/OrderModel";
+import { WebLarekApi } from "./components/WebLarekApi";
 import { apiProducts } from "./utils/data";
+import { API_URL, settings } from "./utils/constants";
 import { IProduct, TPayment } from "./types";
 
 // Создаём брокер событий (из готового кода)
@@ -167,3 +169,31 @@ console.log("Данные покупателя после очистки:", orde
 // 9. Проветка полностью невалидных данных
 console.log("Валидация после полной очистки:", orderModel.validate());
 console.log("\n=== ПРОВЕРКА ЗАВЕРШЕНА ===");
+
+//
+// === РАБОТА С СЕРВЕРОМ ===
+//
+console.log("\n=== ПРОВЕРКА СЛОЯ КОММУНИКАЦИИ (WebLarekApi) ===");
+
+// Создаём экземпляр нашего конкретного Api-клиента
+const api = new WebLarekApi(API_URL, settings);
+
+// Выполняем запрос на сервер для получения списка товаров
+api
+  .getProductList()
+  .then((response) => {
+    console.log("Ответ сервера на GET /product/:", response);
+    // Сохраняем полученный массив товаров в модели каталога
+    productsModel.setItems(response.items);
+    console.log(
+      "Каталог товаров, полученный с сервера:",
+      productsModel.getItems(),
+    );
+    console.log(
+      "Количество товаров в каталоге:",
+      productsModel.getItems().length,
+    );
+  })
+  .catch((err) => {
+    console.error("Ошибка при получении товаров с сервера:", err);
+  });

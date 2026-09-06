@@ -1,0 +1,20 @@
+import { Api } from "./base/Api";
+import { IApi, IOrder, IOrderResult, IProductListResponse } from "../types";
+
+export class WebLarekApi {
+  private api: IApi;
+
+  constructor(baseUrl: string, options: RequestInit = {}) {
+    this.api = new Api(baseUrl, options);
+  }
+
+  // Получение списка товаров с сервера
+  getProductList(): Promise<IProductListResponse> {
+    return this.api.get<IProductListResponse>("/product/");
+  }
+
+  // Отправка заказа на сервер
+  createOrder(order: IOrder): Promise<IOrderResult> {
+    return this.api.post<IOrderResult>("/order/", order);
+  }
+}
