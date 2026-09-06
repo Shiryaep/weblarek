@@ -1,11 +1,10 @@
-import { Api } from "./base/Api";
 import { IApi, IOrder, IOrderResult, IProductListResponse } from "../types";
 
 export class WebLarekApi {
   private api: IApi;
 
-  constructor(baseUrl: string, options: RequestInit = {}) {
-    this.api = new Api(baseUrl, options);
+  constructor(api : IApi) {
+    this.api = api;
   }
 
   // Получение списка товаров с сервера

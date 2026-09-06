@@ -1,60 +1,18 @@
 import "./scss/styles.scss";
-import { EventEmitter } from "./components/base/Events";
 import { ProductModel } from "./components/models/ProductModel";
 import { BasketModel } from "./components/models/BasketModel";
-import { OrderModel } from "./components/models/OrderModel";
+import { BuyerModel } from "./components/models/BuyerModel";
 import { WebLarekApi } from "./components/WebLarekApi";
 import { apiProducts } from "./utils/data";
 import { API_URL, settings } from "./utils/constants";
-import { IProduct, TPayment } from "./types";
-
-// Создаём брокер событий (из готового кода)
-const events = new EventEmitter();
-
-// Подписываемся на события для тестиков
-events.on("products:changed", (data: { items: IProduct[] }) => {
-  console.log(
-    "[Event (products:changed) случился] — товаров в каталоге:",
-    data.items.length,
-  );
-});
-events.on("preview:changed", (data: { product: IProduct | null }) => {
-  console.log(
-    "[Event (preview:changed) случился] — выбран товар:",
-    data.product?.title,
-  );
-});
-events.on("basket:changed", (data: { items: IProduct[] }) => {
-  console.log(
-    "[Event (basket:changed) случился] — товаров в корзине:",
-    data.items.length,
-  );
-});
-events.on("order:paymentChanged", (data: { payment: TPayment }) => {
-  console.log(
-    "[Event (order:paymentChanged) случился] — способ оплаты:",
-    data.payment,
-  );
-});
-events.on("order:addressChanged", (data: { address: string }) => {
-  console.log("[Event (order:addressChanged) случился] — адрес:", data.address);
-});
-events.on("order:phoneChanged", (data: { phone: string }) => {
-  console.log("[Event (order:phoneChanged) случился] — телефон:", data.phone);
-});
-events.on("order:emailChanged", (data: { email: string }) => {
-  console.log("[Event (order:emailChanged) случился] — email:", data.email);
-});
-events.on("order:cleared", () => {
-  console.log("[Event (order:cleared) случился] — данные покупателя очищены");
-});
+import { Api } from "./components/base/Api";
 
 // Создаём экземпляры моделей
 console.log("=== ИНИЦИАЛИЗАЦИЯ МОДЕЛЕЙ ===");
 
-const productsModel = new ProductModel(events);
-const basketModel = new BasketModel(events);
-const orderModel = new OrderModel(events);
+const productsModel = new ProductModel();
+const basketModel = new BasketModel();
+const buyerModel = new BuyerModel(null, "", "", "");
 
 //Методы для каталога
 console.log("\n=== ПРОВЕРКА ProductModel (Каталог товаров) ===");
@@ -141,33 +99,33 @@ console.log("Количество товаров после очистки:", ba
 console.log("\n=== ПРОВЕРКА OrderModel (Покупатель) ===");
 
 // 1. setPayment — сохранение вида оплаты
-orderModel.setPayment("online");
+buyerModel.setPayment("cash");
 
 // 2. setAddress — сохранение адреса
-orderModel.setAddress("г. Москва, улица Пушкина, дом Колотушкина");
+buyerModel.setAddress("г. Москва, улица Пушкина, дом Колотушкина");
 
 // 3. setPhone — сохранение телефона
-orderModel.setPhone("+7 (000) 123-45-67");
+buyerModel.setPhone("+7 (000) 123-45-67");
 
 // 4. setEmail — сохранение email
-orderModel.setEmail("test@yandex.ru");
+buyerModel.setEmail("test@yandex.ru");
 
 // 5. getData — получение всех данных
-console.log("Все данные покупателя:", orderModel.getData());
+console.log("Все данные покупателя:", buyerModel.getData());
 
 // 6. validate — валидация заполненных данных (должна вернуть null)
-console.log("Валидация заполненных данных:", orderModel.validate());
+console.log("Валидация заполненных данных:", buyerModel.validate());
 
 // 7. Проверка частичной валидации — очищаем email и payment
-orderModel.setPayment(null as unknown as TPayment);
-(orderModel as any)._email = "";
-console.log("Валидация после очистки email и payment:", orderModel.validate());
+buyerModel.setPayment(null);
+buyerModel.setEmail('');
+console.log("Валидация после очистки email и payment:", buyerModel.validate());
 
 // 8. Полная очистка данных
-orderModel.clear();
-console.log("Данные покупателя после очистки:", orderModel.getData());
+buyerModel.clear();
+console.log("Данные покупателя после очистки:", buyerModel.getData());
 // 9. Проветка полностью невалидных данных
-console.log("Валидация после полной очистки:", orderModel.validate());
+console.log("Валидация после полной очистки:", buyerModel.validate());
 console.log("\n=== ПРОВЕРКА ЗАВЕРШЕНА ===");
 
 //
@@ -176,7 +134,8 @@ console.log("\n=== ПРОВЕРКА ЗАВЕРШЕНА ===");
 console.log("\n=== ПРОВЕРКА СЛОЯ КОММУНИКАЦИИ (WebLarekApi) ===");
 
 // Создаём экземпляр нашего конкретного Api-клиента
-const api = new WebLarekApi(API_URL, settings);
+const apiBase = new Api(API_URL, settings);
+const api = new WebLarekApi(apiBase);
 
 // Выполняем запрос на сервер для получения списка товаров
 api

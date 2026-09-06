@@ -1,4 +1,5 @@
 export type ApiPostMethods = "POST" | "PUT" | "DELETE";
+export type TBuyerErrors = Partial<Record<keyof IBuyer, string>>;
 
 export interface IApi {
   get<T extends object>(uri: string): Promise<T>;
@@ -10,7 +11,7 @@ export interface IApi {
 }
 
 // Интерфейсы для классов данных
-export type TPayment = "online" | "offline";
+export type TPayment = "card" | "cash";
 
 export interface IProduct {
   id: string;
@@ -22,38 +23,30 @@ export interface IProduct {
 }
 
 export interface IBuyer {
-  payment: TPayment;
+  payment: TPayment | null;
   email: string;
   phone: string;
   address: string;
 }
 
-export interface IOrder {
-  payment: TPayment;
-  email: string;
-  phone: string;
-  address: string;
+export interface IOrder extends IBuyer {
   total: number;
   items: string[];
+}
+
+export interface IProductItemResponse extends IProduct {
+  error?: string;
 }
 
 // Ответ сервера на GET /product/
 export interface IProductListResponse {
-  items: IProduct[];
-}
-
-// Заказ, отправляемый на сервер POST /order/
-export interface IOrder {
-  payment: TPayment;
-  email: string;
-  phone: string;
-  address: string;
   total: number;
-  items: string[];
+  items: IProduct[];
 }
 
 // Ответ сервера на POST /order/
 export interface IOrderResult {
-  id: string;
+  id?: string;
+  total?: number;
   error?: string;
 }
