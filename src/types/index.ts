@@ -34,10 +34,6 @@ export interface IOrder extends IBuyer {
   items: string[];
 }
 
-export interface IProductItemResponse extends IProduct {
-  error?: string;
-}
-
 // Ответ сервера на GET /product/
 export interface IProductListResponse {
   total: number;
@@ -46,7 +42,6 @@ export interface IProductListResponse {
 
 // Ответ сервера на POST /order/
 export interface IOrderResult {
-  id?: string;
-  total?: number;
-  error?: string;
+  id: string;
+  total: number;
 }

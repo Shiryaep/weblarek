@@ -171,7 +171,7 @@ interface IBuyer {
 Отвечает за хранение данных покупателя, которые тот указывает при оформлении заказа, а также за их валидацию.
 
 Конструктор:
-`constructor(payment: TPayment | null, email: string, phone: string, address: string,)` - принимает начальные значения для покупателя.
+`constructor()` - не принимает никаких параметров.
 
 Поля класса:
 `payment: TPayment | null` - выбранный вид оплаты.

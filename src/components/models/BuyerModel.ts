@@ -6,17 +6,7 @@ export class BuyerModel {
   protected phone: string = "";
   protected email: string = "";
 
-  constructor(
-    payment: TPayment | null,
-    email: string,
-    phone: string,
-    address: string,
-  ) {
-    this.payment = payment;
-    this.email = email;
-    this.phone = phone;
-    this.address = address;
-  }
+  constructor() {}
 
   // Сохранение вида оплаты
   setPayment(value: TPayment | null): void {

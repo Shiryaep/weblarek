@@ -12,7 +12,7 @@ console.log("=== ИНИЦИАЛИЗАЦИЯ МОДЕЛЕЙ ===");
 
 const productsModel = new ProductModel();
 const basketModel = new BasketModel();
-const buyerModel = new BuyerModel(null, "", "", "");
+const buyerModel = new BuyerModel();
 
 //Методы для каталога
 console.log("\n=== ПРОВЕРКА ProductModel (Каталог товаров) ===");
