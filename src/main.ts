@@ -1,158 +1,265 @@
 import "./scss/styles.scss";
+import { EventEmitter } from "./components/base/Events";
 import { ProductModel } from "./components/models/ProductModel";
 import { BasketModel } from "./components/models/BasketModel";
 import { BuyerModel } from "./components/models/BuyerModel";
 import { WebLarekApi } from "./components/WebLarekApi";
-import { apiProducts } from "./utils/data";
-import { API_URL, settings } from "./utils/constants";
 import { Api } from "./components/base/Api";
+import { API_URL, CDN_URL, settings } from "./utils/constants";
+import { cloneTemplate, ensureElement } from "./utils/utils";
 
-// Создаём экземпляры моделей
-console.log("=== ИНИЦИАЛИЗАЦИЯ МОДЕЛЕЙ ===");
+// import Views
+import { Gallery } from "./components/views/Gallery";
+import { Header } from "./components/views/Header";
+import { Modal } from "./components/views/Modal";
+import { CardCatalog } from "./components/views/CardCatalog";
+import { CardPreview } from "./components/views/CardPreview";
+import { CardBasket } from "./components/views/CardBasket";
+import { Basket } from "./components/views/Basket";
+import { IOrderFormData, OrderForm } from "./components/views/OrderForm";
+import {
+  ContactsForm,
+  IContactsFormData,
+} from "./components/views/ContactForm";
+import { Success } from "./components/views/Success";
+import { IProduct, TPayment } from "./types";
 
-const productsModel = new ProductModel();
-const basketModel = new BasketModel();
-const buyerModel = new BuyerModel();
-
-//Методы для каталога
-console.log("\n=== ПРОВЕРКА ProductModel (Каталог товаров) ===");
-
-// 1. setItems — сохранение массива товаров
-productsModel.setItems(apiProducts.items);
-console.log(
-  "Массив товаров из каталога после setItems:",
-  productsModel.getItems(),
-);
-
-// 2. getItems — получение массива товаров
-console.log("Количество товаров в каталоге:", productsModel.getItems().length);
-
-// 3. getProductById — получение товара по id
-const firstProductId = apiProducts.items[0].id;
-console.log(
-  `Товар по id ${firstProductId}:`,
-  productsModel.getProductById(firstProductId),
-);
-console.log(
-  'Товар по несуществующему id "unknown":',
-  productsModel.getProductById("unknown"),
-);
-
-// 4. setPreview — сохранение товара для подробного отображения
-productsModel.setPreview(firstProductId);
-
-// 5. getPreview — получение товара для подробного отображения
-console.log(
-  "Товар для подробного отображения (preview):",
-  productsModel.getPreview(),
-);
-
-//Методы для корзины
-console.log("\n=== ПРОВЕРКА BasketModel (Корзина) ===");
-
-// 1. getItems — получение пустой корзины
-console.log("Корзина до добавления товаров:", basketModel.getItems());
-
-// 2. addItem — добавление товара
-const product1 = apiProducts.items[0];
-const product2 = apiProducts.items[1];
-const product3 = apiProducts.items[2];
-basketModel.addItem(product1);
-basketModel.addItem(product2);
-basketModel.addItem(product3);
-console.log("Корзина после добавления 3 товаров:", basketModel.getItems());
-
-// 3. hasItem — проверка наличия товара
-console.log(
-  `Товар ${product1.id} есть в корзине?`,
-  basketModel.hasItem(product1.id),
-);
-console.log(
-  'Несуществующий товар "unknown" в корзине?',
-  basketModel.hasItem("unknown"),
-);
-
-// 4. getCount — количество товаров
-console.log("Количество товаров в корзине:", basketModel.getCount());
-
-// 5. getTotalPrice — общая стоимость
-console.log("Общая стоимость товаров в корзине:", basketModel.getTotalPrice());
-
-// 6. Повторное добавление того же товара (не должно добавиться)
-basketModel.addItem(product1);
-console.log(
-  "Количество товаров после попытки повторного добавления:",
-  basketModel.getCount(),
-);
-
-// 7. removeItem — удаление товара
-basketModel.removeItem(product2.id);
-console.log("Корзина после удаления второго товара:", basketModel.getItems());
-console.log("Количество товаров после удаления:", basketModel.getCount());
-
-// 8. clear — очистка корзины
-basketModel.clear();
-console.log("Корзина после очистки:", basketModel.getItems());
-console.log("Количество товаров после очистки:", basketModel.getCount());
-
-//Методы для покупателя
-console.log("\n=== ПРОВЕРКА OrderModel (Покупатель) ===");
-
-// 1. setPayment — сохранение вида оплаты
-buyerModel.setPayment("cash");
-
-// 2. setAddress — сохранение адреса
-buyerModel.setAddress("г. Москва, улица Пушкина, дом Колотушкина");
-
-// 3. setPhone — сохранение телефона
-buyerModel.setPhone("+7 (000) 123-45-67");
-
-// 4. setEmail — сохранение email
-buyerModel.setEmail("test@yandex.ru");
-
-// 5. getData — получение всех данных
-console.log("Все данные покупателя:", buyerModel.getData());
-
-// 6. validate — валидация заполненных данных (должна вернуть null)
-console.log("Валидация заполненных данных:", buyerModel.validate());
-
-// 7. Проверка частичной валидации — очищаем email и payment
-buyerModel.setPayment(null);
-buyerModel.setEmail('');
-console.log("Валидация после очистки email и payment:", buyerModel.validate());
-
-// 8. Полная очистка данных
-buyerModel.clear();
-console.log("Данные покупателя после очистки:", buyerModel.getData());
-// 9. Проветка полностью невалидных данных
-console.log("Валидация после полной очистки:", buyerModel.validate());
-console.log("\n=== ПРОВЕРКА ЗАВЕРШЕНА ===");
-
-//
-// === РАБОТА С СЕРВЕРОМ ===
-//
-console.log("\n=== ПРОВЕРКА СЛОЯ КОММУНИКАЦИИ (WebLarekApi) ===");
-
-// Создаём экземпляр нашего конкретного Api-клиента
+const events = new EventEmitter();
+const productModel = new ProductModel(events);
+const basketModel = new BasketModel(events);
+const buyerModel = new BuyerModel(events);
 const apiBase = new Api(API_URL, settings);
 const api = new WebLarekApi(apiBase);
 
-// Выполняем запрос на сервер для получения списка товаров
+const galleryElem = new Gallery(ensureElement<HTMLElement>(".gallery", this));
+const header = new Header(
+  ensureElement<HTMLElement>(".header__container", this),
+  { onClick: () => events.emit("basket:opened") },
+);
+const modal = new Modal(ensureElement<HTMLElement>(".modal"));
+
+const orderForm = new OrderForm(
+  events,
+  cloneTemplate<HTMLFormElement>("#order"),
+);
+const contactsForm = new ContactsForm(
+  events,
+  cloneTemplate<HTMLFormElement>("#contacts"),
+);
+const success = new Success(cloneTemplate<HTMLFormElement>("#success"), {
+  onClose: () => {
+    modal.close();
+    events.emit("catalog:open");
+  },
+});
+
+const basket = new Basket(cloneTemplate<HTMLElement>("#basket"), {
+  onCheckout: () => events.emit("order:open"),
+});
+
 api
   .getProductList()
   .then((response) => {
     console.log("Ответ сервера на GET /product/:", response);
-    // Сохраняем полученный массив товаров в модели каталога
-    productsModel.setItems(response.items);
-    console.log(
-      "Каталог товаров, полученный с сервера:",
-      productsModel.getItems(),
-    );
-    console.log(
-      "Количество товаров в каталоге:",
-      productsModel.getItems().length,
-    );
+    productModel.setItems(response.items);
   })
   .catch((err) => {
     console.error("Ошибка при получении товаров с сервера:", err);
   });
+
+// Event Handlers
+
+events.on("product:changed", () => {
+  const cards = productModel.getItems().map((item) =>
+    new CardCatalog(cloneTemplate<HTMLElement>("#card-catalog"), {
+      onClick: () => events.emit("cardCatalog:selected", item),
+    }).render({
+      title: item.title,
+      category: item.category,
+      price: item.price,
+      image: `${CDN_URL}${item.image}`,
+    }),
+  );
+
+  galleryElem.render({ items: cards });
+});
+
+events.on("cardCatalog:selected", (item: IProduct) => {
+  const isInBasket = basketModel.hasItem(item.id); 
+
+  const cardPreview = new CardPreview(
+    cloneTemplate<HTMLElement>("#card-preview"),
+    {
+      onClick: () => {
+        if (item.price !== null) {
+          if (basketModel.hasItem(item.id)) {
+            basketModel.removeItem(item.id);
+          } else {
+            basketModel.addItem(item);
+          }
+          events.emit("basket:changed");
+        }
+        modal.close();
+      },
+    },
+  );
+
+  modal.render({
+    content: cardPreview.render({
+      title: item.title,
+      description: item.description,
+      category: item.category,
+      price: item.price,
+      image: `${CDN_URL}${item.image}`,
+      isDisabled: item.price === null, 
+      buttonText: item.price === null ? "Недоступно" :(isInBasket ? "Удалить из корзины" : "Купить"),
+    }),
+  });
+});
+
+events.on("basket:changed", () => {
+  header.render({ counter: basketModel.getCount() });
+});
+
+events.on("cardPreview:buttonClicked", (item: IProduct) => {
+  basketModel.addItem(item);
+  modal.close();
+});
+
+events.on("basket:opened", () => {
+  const items = basketModel.getItems();
+
+  if (items.length === 0) {
+    modal.render({
+      content: basket.render({
+        items: [],
+        total: 0,
+        isValid: false,
+        isEmpty: true,
+      }),
+    });
+  } else {
+    const cards = items.map((item, index) =>
+      new CardBasket(cloneTemplate<HTMLElement>("#card-basket"), {
+        onClick: () => {
+          basketModel.removeItem(item.id);
+          events.emit("basket:changed");
+          events.emit("basket:opened");
+        },
+      }).render({
+        title: item.title,
+        category: item.category,
+        price: item.price,
+        index: index + 1,
+      }),
+    );
+
+    modal.render({
+      content: basket.render({
+        items: cards,
+        total: basketModel.getTotalPrice(),
+        isValid: items.length > 0,
+      }),
+    });
+  }
+});
+
+
+events.on("order:open", () => {
+  orderForm.render({ valid: false, errors: "", payment: "", address: "" });
+  modal.render({
+    content: orderForm.render({
+      valid: false,
+      errors: "",
+      payment: "",
+      address: "",
+    }),
+  });
+});
+
+events.on(
+  "order:change",
+  (data: { field: keyof IOrderFormData; value: string }) => {
+    if (data.field === "payment") buyerModel.setPayment(data.value as TPayment);
+    if (data.field === "address") buyerModel.setAddress(data.value);
+
+    const errors = buyerModel.validate();
+    const isValid = !errors.payment && !errors.address;
+
+    orderForm.render({
+      payment: buyerModel.getData().payment,
+      address: buyerModel.getData().address,
+      valid: isValid,
+      errors: errors.payment || errors.address || "",
+    });
+  },
+);
+
+events.on("order:submit", () => {
+  const errors = buyerModel.validate();
+  if (!errors.payment && !errors.address) {
+    modal.render({
+      content: contactsForm.render({
+        valid: false,
+        errors: "",
+        email: "",
+        phone: "",
+      }),
+    });
+  }
+});
+
+events.on(
+  "contacts:change",
+  (data: { field: keyof IContactsFormData; value: string }) => {
+    if (data.field === "email") buyerModel.setEmail(data.value);
+    if (data.field === "phone") buyerModel.setPhone(data.value);
+
+    const errors = buyerModel.validate();
+    const isValid =
+      !errors.payment && !errors.address && !errors.email && !errors.phone;
+
+    contactsForm.render({
+      email: buyerModel.getData().email,
+      phone: buyerModel.getData().phone,
+      valid: isValid,
+      errors: errors.email || errors.phone || "",
+    });
+  },
+);
+
+events.on("contacts:submit", () => {
+  const errors = buyerModel.validate();
+  const isFullyValid =
+    !errors.payment && !errors.address && !errors.email && !errors.phone;
+
+  if (isFullyValid) {
+    const orderData = {
+      ...buyerModel.getData(),
+      total: basketModel.getTotalPrice(),
+      items: basketModel.getItems().map((item) => item.id),
+    };
+
+    api
+      .createOrder(orderData)
+      .then((result) => {
+        basketModel.clear();
+        buyerModel.clear();
+        events.emit("basket:changed");
+
+        modal.render({ content: success.render({ total: result.total }) });
+      })
+      .catch((err) => {
+        contactsForm.render({
+          valid: false,
+          errors: "Ошибка при оплате. Попробуйте позже.",
+        });
+      });
+  }
+});
+
+events.on("modal:close", () => {
+  buyerModel.clear();
+  orderForm.render({ valid: false, errors: "", payment: "", address: "" });
+  contactsForm.render({ valid: false, errors: "", email: "", phone: "" });
+});
