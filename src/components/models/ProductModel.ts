@@ -1,14 +1,16 @@
 import { IProduct } from "../../types";
+import { IEvents } from "../base/Events";
 
 export class ProductModel {
   protected items: IProduct[] = [];
   protected preview: string | null = null;
 
-  constructor() {}
+  constructor(protected events: IEvents) {}
 
   // Сохранение массива товаров
   setItems(items: IProduct[]): void {
     this.items = items;
+    this.events.emit("product:changed");
   }
 
   // Получение массива товаров

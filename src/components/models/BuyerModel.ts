@@ -1,4 +1,5 @@
 import { IBuyer, TBuyerErrors, TPayment } from "../../types";
+import { IEvents } from "../base/Events";
 
 export class BuyerModel {
   protected payment: TPayment | null = null;
@@ -6,26 +7,30 @@ export class BuyerModel {
   protected phone: string = "";
   protected email: string = "";
 
-  constructor() {}
+  constructor(protected events: IEvents) {}
 
   // Сохранение вида оплаты
   setPayment(value: TPayment | null): void {
     this.payment = value;
+    this.events.emit("buyer:receivedPayment");
   }
 
   // Сохранение адреса
   setAddress(value: string): void {
     this.address = value;
+    this.events.emit("buyer:receivedAddress");
   }
 
   // Сохранение телефона
   setPhone(value: string): void {
     this.phone = value;
+    this.events.emit("buyer:receivedPhone");
   }
 
   // Сохранение email
   setEmail(value: string): void {
     this.email = value;
+    this.events.emit("buyer:receivedEmail");
   }
 
   // Получение всех данных покупателя
@@ -44,6 +49,7 @@ export class BuyerModel {
     this.address = "";
     this.phone = "";
     this.email = "";
+    this.events.emit("buyer:cleared");
   }
 
   // Валидация данных
