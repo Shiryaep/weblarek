@@ -202,3 +202,145 @@ interface IBuyer {
 Методы класса:
 `getProductList(): Promise<IProductListResponse>` — выполняет `GET`-запрос на эндпоинт `/product/` и возвращает объект с массивом товаров. Тип возвращаемого значения: `{ total: number, items: IProduct[] }`.
 `createOrder(order: IOrder): Promise<IOrderResult>` — выполняет `POST`-запрос на эндпоинт `/order/`, передавая данные заказа (способ оплаты, контакты, адрес, общая сумма, список id товаров). Возвращает объект с идентификатором заказа и, при ошибке, текстом ошибки: `{ id: string, total?: number, error?: string }`.
+
+
+### Представления (View)
+
+#### Card
+Базовый класс для всех представлений товара. Содержит общие элементы разметки и логику их обновления.
+
+Поля:
+`titleElement: HTMLElement` - элемент заголовка товара
+`priceElement: HTMLElement` - элемент цены товара
+
+Методы:
+`set title(value: string): void` - сеттер для названия товара
+`set price(value: number): void` - сеттер для цены товара
+
+#### CardCatalog
+Класс `CardCatalog` наследует класс `Card` и является представлением товара в общем каталоге.
+
+Поля:
+`imageElement: HTMLImageElement` - элемент изображения товара
+`categoryElement: HTMLElement` - элемент категории товара
+
+Методы:
+`set image(image: string)` - сеттер для установки изображения товара
+`set category(value: string)` - сеттер для категории товара
+
+#### CardPreview
+Класс `CardPreview` наследует класс `Card` и отвечает за отображение подробной информации о товаре в модальном окне.
+
+Поля:
+`descriptionElement: HTMLElement` - элемент описания товара
+`buttonElement: HTMLButtonElement` - кнопка действия (добавить/удалить из корзины)
+`imageElement: HTMLImageElement` - элемент изображения товара
+`categoryElement: HTMLElement` - элемент категории товара
+
+Методы:
+`set description(value: string): void` - сеттер для описания товара
+`set isDisabled(value: boolean): void` - сеттер для состояния блокировки кнопки
+`set image(image: string)` - сеттер для установки изображения товара
+`set category(value: string)` - сеттер для категории товара
+`set buttonText(value: string): void` - сеттер для текста кнопки
+
+#### CardBasket
+Класс `CardBasket` наследует класс `Card` и отвечает за отображение краткой информации о товаре внутри списка корзины.
+
+Поля:
+`indexElement: HTMLElement` - элемент порядкового номера товара в корзине
+`deleteButtonElement: HTMLButtonElement` - кнопка удаления товара из корзины
+
+Методы:
+`set index(value: number): void` - сеттер для номера товара в списке
+
+#### Gallery
+Класс `Gallery` отвечает за отображение списка карточек товаров на главной странице.
+
+Поля:
+Нет.
+
+Методы:
+`set items(items: HTMLElement[]): void` - сеттер, который заменяет всё содержимое контейнера на переданный массив элементов карточек
+
+#### Basket
+Класс `Basket` отвечает за отображение содержимого корзины.
+
+Поля:
+`listElement: HTMLElement` - контейнер для списка товаров
+`totalElement: HTMLElement` - элемент для отображения общей суммы
+`checkoutButtonElement: HTMLButtonElement` - кнопка перехода к оформлению заказа
+
+Методы:
+`set items(items: HTMLElement[]): void` - сеттер для списка карточек товаров
+`set total(value: number): void` - сеттер для итоговой суммы
+`set isValid(value: boolean): void` - управляет доступностью кнопки оформления
+`set isEmpty(value: boolean): void` - сеттер для отображения заглушки "Корзина пуста"
+
+#### Form
+Абстрактный базовый класс для всех форм. Содержит общую логику обработки событий `input` и `submit`, а также управление состоянием валидации.
+
+Поля:
+`submitButtonElement: HTMLButtonElement` - кнопка отправки формы
+`errorsElement: HTMLElement` - элемент для вывода текста ошибок валидации
+
+Методы:
+`set valid(value: boolean): void` - сеттер, блокирующий или разблокирующий кнопку отправки
+`set errors(value: string): void` - сеттер для текста ошибки
+
+#### OrderForm
+Класс `OrderForm` наследует класс `Form` и отвечает за первый шаг оформления: выбор способа оплаты и ввод адреса.
+
+Поля:
+`paymentButtons: HTMLButtonElement[]` - массив кнопок выбора способа оплаты
+`addressInputElement: HTMLInputElement` - поле ввода адреса доставки
+
+Методы:
+`set payment(value: string | null): void` - сеттер, подсвечивающий активную кнопку оплаты (добавляет класс `button_alt-active`)
+`set address(value: string): void` - сеттер для значения поля адреса
+
+#### ContactsForm
+Класс `ContactsForm` наследует класс `Form` и отвечает за второй шаг оформления: ввод контактных данных.
+
+Поля:
+`emailInputElement: HTMLInputElement` - поле ввода email
+`phoneInputElement: HTMLInputElement` - поле ввода телефона
+
+Методы:
+`set email(value: string): void` - сеттер для значения поля email
+`set phone(value: string): void` - сеттер для значения поля телефона
+
+#### Success
+Класс `Success` отвечает за отображение экрана успешного завершения заказа.
+
+Поля:
+`descriptionElement: HTMLElement` - элемент с текстом о списанной сумме
+`closeButtonElement: HTMLButtonElement` - кнопка закрытия окна успешной операции
+
+Методы:
+`set total(value: number): void` - сеттер, формирующий текст "Списано N синапсов"
+
+#### Modal
+Класс `Modal` отвечает за управление модальным окном.
+
+Поля:
+`closeButtonElement: HTMLButtonElement` - кнопка закрытия
+`contentElement: HTMLElement` - контейнер, куда вставляется контент
+`windowElement: HTMLElement` - само окно (нужно для предотвращения всплытия клика)
+
+Методы:
+`set content(value: HTMLElement): void` - сеттер, заменяющий содержимое `contentElement`
+`open(): void` - добавляет модификатор `modal_active` контейнеру
+`close(): void` - удаляет модификатор `modal_active` и очищает контент
+`render(data: IModalData): HTMLElement` - применяет контент, вызывает `open()` и возвращает корневой элемент
+
+#### Header
+Класс `Header` отвечает за отображение шапки сайта, включая логотип и интерактивную кнопку корзины со счётчиком товаров.
+
+Поля:
+`counterElement: HTMLElement` - элемент, отображающий текущее количество товаров в корзине
+`basketButtonElement: HTMLButtonElement` - кнопка открытия корзины
+
+Методы:
+`set counter(value: number): void` - сеттер для обновления числа товаров в счётчике корзины
+
