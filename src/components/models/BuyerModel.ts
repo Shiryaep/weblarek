@@ -12,25 +12,25 @@ export class BuyerModel {
   // Сохранение вида оплаты
   setPayment(value: TPayment | null): void {
     this.payment = value;
-    this.events.emit("buyer:receivedPayment");
+    this.events.emit("buyer:changed");
   }
 
   // Сохранение адреса
   setAddress(value: string): void {
     this.address = value;
-    this.events.emit("buyer:receivedAddress");
+    this.events.emit("buyer:changed");
   }
 
   // Сохранение телефона
   setPhone(value: string): void {
     this.phone = value;
-    this.events.emit("buyer:receivedPhone");
+    this.events.emit("buyer:changed");
   }
 
   // Сохранение email
   setEmail(value: string): void {
     this.email = value;
-    this.events.emit("buyer:receivedEmail");
+    this.events.emit("buyer:changed");
   }
 
   // Получение всех данных покупателя

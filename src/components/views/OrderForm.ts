@@ -1,4 +1,4 @@
-import { Form, IFormState } from './Form';
+import { Form } from './Form';
 import { ensureElement, ensureAllElements } from '../../utils/utils';
 import { IEvents } from '../base/Events';
 

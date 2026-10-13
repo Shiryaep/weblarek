@@ -66,6 +66,14 @@ api
   .catch((err) => {
     console.error("Ошибка при получении товаров с сервера:", err);
   });
+const cardPreview = new CardPreview(
+  cloneTemplate<HTMLElement>("#card-preview"),
+  {
+    onClick: () => {
+      events.emit("preview:click");
+    },
+  },
+);
 
 // Event Handlers
 
@@ -85,40 +93,69 @@ events.on("product:changed", () => {
 });
 
 events.on("cardCatalog:selected", (item: IProduct) => {
-  const isInBasket = basketModel.hasItem(item.id); 
+  productModel.setPreview(item.id);
+});
 
-  const cardPreview = new CardPreview(
-    cloneTemplate<HTMLElement>("#card-preview"),
-    {
-      onClick: () => {
-        if (item.price !== null) {
-          if (basketModel.hasItem(item.id)) {
-            basketModel.removeItem(item.id);
-          } else {
-            basketModel.addItem(item);
-          }
-          events.emit("basket:changed");
-        }
-        modal.close();
-      },
-    },
-  );
+events.on("productPreview:changed", () => {
+  const currentItem = productModel.getPreview();
+  if (currentItem !== null) {
+    const isInBasket = basketModel.hasItem(currentItem.id);
 
-  modal.render({
-    content: cardPreview.render({
-      title: item.title,
-      description: item.description,
-      category: item.category,
-      price: item.price,
-      image: `${CDN_URL}${item.image}`,
-      isDisabled: item.price === null, 
-      buttonText: item.price === null ? "Недоступно" :(isInBasket ? "Удалить из корзины" : "Купить"),
-    }),
-  });
+    modal.render({
+      content: cardPreview.render({
+        title: currentItem.title,
+        description: currentItem.description,
+        category: currentItem.category,
+        price: currentItem.price,
+        image: `${CDN_URL}${currentItem.image}`,
+        isDisabled: currentItem.price === null,
+        buttonText:
+          currentItem.price === null
+            ? "Недоступно"
+            : isInBasket
+              ? "Удалить из корзины"
+              : "Купить",
+      }),
+    });
+  }
+});
+
+events.on("preview:click", () => {
+  const currentItem = productModel.getPreview();
+  if (currentItem !== null) {
+    if (currentItem.price !== null) {
+      if (basketModel.hasItem(currentItem.id)) {
+        basketModel.removeItem(currentItem.id);
+      } else {
+        basketModel.addItem(currentItem);
+      }
+    }
+    modal.close();
+  }
 });
 
 events.on("basket:changed", () => {
   header.render({ counter: basketModel.getCount() });
+  const items = basketModel.getItems();
+
+  const cards = items.map((item, index) =>
+    new CardBasket(cloneTemplate<HTMLElement>("#card-basket"), {
+      onClick: () => {
+        basketModel.removeItem(item.id);
+        events.emit("basket:opened");
+      },
+    }).render({
+      title: item.title,
+      category: item.category,
+      price: item.price,
+      index: index + 1,
+    }),
+  );
+
+  basket.render({
+    items: cards,
+    total: basketModel.getTotalPrice(),
+  });
 });
 
 events.on("cardPreview:buttonClicked", (item: IProduct) => {
@@ -127,53 +164,14 @@ events.on("cardPreview:buttonClicked", (item: IProduct) => {
 });
 
 events.on("basket:opened", () => {
-  const items = basketModel.getItems();
-
-  if (items.length === 0) {
-    modal.render({
-      content: basket.render({
-        items: [],
-        total: 0,
-        isValid: false,
-        isEmpty: true,
-      }),
-    });
-  } else {
-    const cards = items.map((item, index) =>
-      new CardBasket(cloneTemplate<HTMLElement>("#card-basket"), {
-        onClick: () => {
-          basketModel.removeItem(item.id);
-          events.emit("basket:changed");
-          events.emit("basket:opened");
-        },
-      }).render({
-        title: item.title,
-        category: item.category,
-        price: item.price,
-        index: index + 1,
-      }),
-    );
-
-    modal.render({
-      content: basket.render({
-        items: cards,
-        total: basketModel.getTotalPrice(),
-        isValid: items.length > 0,
-      }),
-    });
-  }
+  modal.render({
+    content: basket.render(),
+  });
 });
 
-
 events.on("order:open", () => {
-  orderForm.render({ valid: false, errors: "", payment: "", address: "" });
   modal.render({
-    content: orderForm.render({
-      valid: false,
-      errors: "",
-      payment: "",
-      address: "",
-    }),
+    content: orderForm.render(),
   });
 });
 
@@ -182,31 +180,11 @@ events.on(
   (data: { field: keyof IOrderFormData; value: string }) => {
     if (data.field === "payment") buyerModel.setPayment(data.value as TPayment);
     if (data.field === "address") buyerModel.setAddress(data.value);
-
-    const errors = buyerModel.validate();
-    const isValid = !errors.payment && !errors.address;
-
-    orderForm.render({
-      payment: buyerModel.getData().payment,
-      address: buyerModel.getData().address,
-      valid: isValid,
-      errors: errors.payment || errors.address || "",
-    });
   },
 );
 
 events.on("order:submit", () => {
-  const errors = buyerModel.validate();
-  if (!errors.payment && !errors.address) {
-    modal.render({
-      content: contactsForm.render({
-        valid: false,
-        errors: "",
-        email: "",
-        phone: "",
-      }),
-    });
-  }
+  modal.render({ content: contactsForm.render() });
 });
 
 events.on(
@@ -214,48 +192,51 @@ events.on(
   (data: { field: keyof IContactsFormData; value: string }) => {
     if (data.field === "email") buyerModel.setEmail(data.value);
     if (data.field === "phone") buyerModel.setPhone(data.value);
-
-    const errors = buyerModel.validate();
-    const isValid =
-      !errors.payment && !errors.address && !errors.email && !errors.phone;
-
-    contactsForm.render({
-      email: buyerModel.getData().email,
-      phone: buyerModel.getData().phone,
-      valid: isValid,
-      errors: errors.email || errors.phone || "",
-    });
   },
 );
 
 events.on("contacts:submit", () => {
+  const orderData = {
+    ...buyerModel.getData(),
+    total: basketModel.getTotalPrice(),
+    items: basketModel.getItems().map((item) => item.id),
+  };
+
+  api
+    .createOrder(orderData)
+    .then((result) => {
+      basketModel.clear();
+      buyerModel.clear();
+
+      modal.render({ content: success.render({ total: result.total }) });
+    })
+    .catch((err) => {
+      contactsForm.render({
+        valid: false,
+        errors: "Ошибка при оплате. Попробуйте позже.",
+      });
+    });
+});
+
+events.on("buyer:changed", () => {
   const errors = buyerModel.validate();
+  const isFirstValid = !errors.payment && !errors.address;
   const isFullyValid =
     !errors.payment && !errors.address && !errors.email && !errors.phone;
 
-  if (isFullyValid) {
-    const orderData = {
-      ...buyerModel.getData(),
-      total: basketModel.getTotalPrice(),
-      items: basketModel.getItems().map((item) => item.id),
-    };
+  orderForm.render({
+    payment: buyerModel.getData().payment,
+    address: buyerModel.getData().address,
+    valid: isFirstValid,
+    errors: errors.payment || errors.address || "",
+  });
 
-    api
-      .createOrder(orderData)
-      .then((result) => {
-        basketModel.clear();
-        buyerModel.clear();
-        events.emit("basket:changed");
-
-        modal.render({ content: success.render({ total: result.total }) });
-      })
-      .catch((err) => {
-        contactsForm.render({
-          valid: false,
-          errors: "Ошибка при оплате. Попробуйте позже.",
-        });
-      });
-  }
+  contactsForm.render({
+    email: buyerModel.getData().email,
+    phone: buyerModel.getData().phone,
+    valid: isFullyValid,
+    errors: errors.email || errors.phone || "",
+  });
 });
 
 events.on("modal:close", () => {

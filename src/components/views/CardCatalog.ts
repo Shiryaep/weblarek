@@ -1,5 +1,6 @@
 import { Card, ICard } from "./Card";
-import { ensureElement } from "../../utils/utils";
+import { ensureElement, isCategoryKey } from "../../utils/utils";
+import { categoryMap } from "../../utils/constants";
 
 export interface ICardPreviewData extends ICard {
   image: string;
@@ -33,8 +34,14 @@ export class CardCatalog extends Card<ICardPreviewData> {
   protected set image(image: string) {
     this.setImage(this.imageElement, image, this.titleElement.textContent);
   }
-  
+
   protected set category(value: string) {
     this.categoryElement.textContent = value;
+
+    if (isCategoryKey(value)) {
+      this.categoryElement.className = `card__category ${categoryMap[value]}`;
+    } else {
+      this.categoryElement.className = 'card__category';
+    }
   }
 }

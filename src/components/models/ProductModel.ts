@@ -26,6 +26,7 @@ export class ProductModel {
   // Сохранение товара для подробного отображения
   setPreview(id: string): void {
     this.preview = id;
+    this.events.emit("productPreview:changed");
   }
 
   // Получение товара для подробного отображения

@@ -38,7 +38,14 @@ export class Basket extends Component<IBasketData> {
   }
 
   protected set items(items: HTMLElement[]) {
-    this.listElement.replaceChildren(...items);
+    if (items.length === 0) {
+      this.listElement.innerHTML = '<p class="basket__empty">Корзина пуста</p>';
+      this.isValid = false;
+    }
+    else {
+      this.listElement.replaceChildren(...items);
+      this.isValid = true;
+    }
   }
 
   protected set total(value: number) {
@@ -47,12 +54,5 @@ export class Basket extends Component<IBasketData> {
 
   protected set isValid(value: boolean) {
     this.checkoutButtonElement.disabled = !value;
-  }
-
-  protected set isEmpty(value: boolean) {
-    if (value) {
-      this.listElement.innerHTML = '<p class="basket__empty">Корзина пуста</p>';
-      this.checkoutButtonElement.disabled = true;
-    }
   }
 }
